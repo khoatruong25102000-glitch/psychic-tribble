@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>RFID Dashboard</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+
+<style>
+body {
+    font-family: 'Segoe UI', Tahoma;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    margin: 0;
+    color: #333;
+}
+
+/* CENTER */
+.wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+/* MAIN BOX */
+.container {
+    width: 95%;
+    max-width: 1000px;
+}
+
+/* TITLE */
+h2 {
+    text-align: center;
+    color: white;
+    margin-bottom: 20px;
+}
+
+/* GRID LAYOUT */
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
+}
+
+/* CARD */
+.card {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    transition: 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+/* STATUS */
+#status {
+    font-weight: bold;
+    padding: 12px;
+    border-radius: 10px;
+    text-align: center;
+    margin-top: 10px;
+}
+
+.connected {
+    background: #d4edda;
+    color: #155724;
+}
+
+.disconnected {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* LOG */
+.log {
+    margin-top: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* ENTRY */
+.entry {
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    color: white;
+    font-size: 15px;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* ANIMATION */
+@keyframes fadeIn {
+    from {opacity: 0; transform: translateY(-5px);}
+    to {opacity: 1; transform: translateY(0);}
+}
+
+/* COLORS */
+.muon {
+    background: #28a745;
+}
+
+.tra {
+    background: #ff9800;
+}
+
+.quahan {
+    background: #dc3545;
+}
+
+/* TIME */
+.time {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+<div class="container">
+
+    <h2>📡 HỆ THỐNG MƯỢN TRẢ THIẾT BỊ</h2>
+
+    <div class="grid">
+
+        <!-- STATUS -->
+        <div class="card">
+            <h3>🔌 Trạng thái</h3>
+            <div id="status" class="disconnected">Đang kết nối...</div>
+        </div>
+
+        <!-- LOG -->
+        <div class="card">
+            <h3>📋 Lịch sử hoạt động</h3>
+            <div id="messages" class="log"></div>
+        </div>
+
+    </div>
+
+</div>
+</div>
+
+<script>
+
+// MQTT
+const client = new Paho.MQTT.Client(
+    "8de84013b2b34af6bc2cad997d046a48.s1.eu.hivemq.cloud",
+    8884,
+    "WebClient_" + Math.random()
+);
+
+client.connect({
+    useSSL: true,
+    userName: "Khoa12345",
+    password: "Khoa12345",
+
+    onSuccess: () => {
+        document.getElementById("status").innerHTML = "✅ Đã kết nối";
+        document.getElementById("status").className = "connected";
+
+        client.subscribe("truonghoc/muontra");
+    },
+
+    onFailure: () => {
+        document.getElementById("status").innerHTML = "❌ Mất kết nối";
+        document.getElementById("status").className = "disconnected";
+    }
+});
+
+// NHẬN DỮ LIỆU
+client.onMessageArrived = (message) => {
+
+    const data = JSON.parse(message.payloadString);
+
+    let typeClass = "muon";
+
+    if (data.action.includes("TRA") && data.action.includes("QUA")) {
+        typeClass = "quahan";
+    } else if (data.action.includes("TRA")) {
+        typeClass = "tra";
+    }
+
+    const now = new Date().toLocaleTimeString();
+
+    const html = `
+        <div class="entry ${typeClass}">
+            <b>${data.student}</b><br>
+            ${data.action}
+            <div class="time">🕒 ${now}</div>
+        </div>
+    `;
+
+    document.getElementById("messages").innerHTML =
+        html + document.getElementById("messages").innerHTML;
+};
+
+</script>
+
+</body>
+</html>
